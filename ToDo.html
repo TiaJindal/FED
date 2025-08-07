@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>To-Do App</title>
+  <style>
+    /* CSS styles for the To-Do App */
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      width: 80%;
+      height: 80vh;
+      display: flex;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+
+    .pane {
+      flex: 1;
+      padding: 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #task-list-pane {
+      border-right: 1px solid #ccc;
+      overflow-y: auto;
+    }
+
+    #task-list-pane h2,
+    #task-form-pane h2 {
+      margin: 0 0 10px 0;
+      font-weight: 600;
+      font-size: 1.5em;
+      color: #333;
+    }
+
+    #task-list {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 20px;
+      flex-grow: 1;
+    }
+
+    #task-list li {
+      padding: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background-color: #fafafa;
+      transition: background-color 0.3s;
+    }
+
+    #task-list li:hover {
+      background-color: #f0f0f0;
+    }
+
+    #task-list li.completed span.task-text {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    #task-list li span.task-text {
+      flex-grow: 1;
+      padding-left: 10px;
+      word-break: break-word;
+    }
+
+    button.delete-task {
+      background: transparent;
+      border: none;
+      color: red;
+      font-size: 20px;
+      cursor: pointer;
+      margin-left: 12px;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    button.delete-task:hover {
+      color: darkred;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+
+    button[type="submit"] {
+      cursor: pointer;
+      padding: 10px 18px;
+      font-size: 16px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      margin-top: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      transition: background-color 0.3s;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #0056b3;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Left pane with task list -->
+    <div id="task-list-pane" class="pane">
+      <h2>Tasks</h2>
+      <ul id="task-list"></ul>
+    </div>
+
+    <!-- Right pane with form to add tasks -->
+    <div id="task-form-pane" class="pane">
+      <h2>Add New Task</h2>
+      <form id="task-form">
+        <label for="task-input">Task name:</label>
+        <input type="text" id="task-input" name="task" required placeholder="Enter task" autocomplete="off" />
+        <button type="submit">Add Task</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript code for the To-Do App
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const taskList = document.getElementById('task-list');
+      const form = document.getElementById('task-form');
+      const input = document.getElementById('task-input');
+
+      // Handle form submission - add a task (User Story 2)
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const taskText = input.value.trim();
+        if (!taskText) return;
+
+        addTask(taskText);
+        form.reset();
+        input.focus();
+      });
+
+      // Function to add a task item to the task list
+      function addTask(text) {
+        const li = document.createElement('li');
+
+        // Checkbox to mark task as completed
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.title = 'Mark task as completed';
+
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            li.classList.add('completed');
+          } else {
+            li.classList.remove('completed');
+          }
+        });
+
+        // Span to hold task text
+        const span = document.createElement('span');
+        span.className = 'task-text';
+        span.textContent = text;
+
+        // Delete button (cross icon)
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-task';
+        deleteBtn.innerHTML = '&times;'; // ×
+        deleteBtn.title = 'Delete task';
+
+        deleteBtn.addEventListener('click', () => {
+          taskList.removeChild(li);
+        });
+
+        // Append checkbox, task text, and delete button to list item
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(deleteBtn);
+
+        // Append list item to task list
+        taskList.appendChild(li);
+      }
+    });
+  </script>
+</body>
+</html>
