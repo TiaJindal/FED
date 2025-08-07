@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Code Compiler - CodeQuotient API</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 20px;
+        background: #f4f4f4;
+      }
+      label {
+        font-weight: bold;
+        margin-top: 10px;
+        display: block;
+      }
+      textarea {
+        width: 100%;
+        height: 200px;
+        font-family: monospace;
+        font-size: 14px;
+        margin-top: 6px;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        resize: vertical;
+      }
+      select,
+      button {
+        margin-top: 10px;
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 6px;
+        border: 1px solid #888;
+        cursor: pointer;
+      }
+      button {
+        background-color: #0366d6;
+        color: white;
+        border: none;
+      }
+      button:hover {
+        background-color: #024ea2;
+      }
+      #output {
+        background: #222;
+        color: #eee;
+        font-family: monospace;
+        font-size: 14px;
+        margin-top: 20px;
+        padding: 12px;
+        border-radius: 6px;
+        min-height: 100px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Code Compiler</h1>
+    <label for="language">Select Language:</label>
+    <select id="language">
+      <option value="0">Python</option>
+      <option value="4">JavaScript</option>
+      <option value="7">C</option>
+      <option value="77">C++</option>
+      <option value="8">Java</option>
+    </select>
+
+    <label for="code">Enter your code:</label>
+    <textarea id="code" placeholder="Write your code here..."></textarea>
+
+    <button id="compileBtn">Compile Code</button>
+
+    <label for="output">Output Console:</label>
+    <div id="output">Output will appear here...</div>
+
+    <script>
+      const compileBtn = document.getElementById("compileBtn");
+      const output = document.getElementById("output");
+      let pollingInterval = null;
+
+      compileBtn.addEventListener("click", () => {
+        const code = document.getElementById("code").value.trim();
+        const langId = document.getElementById("language").value;
+
+        if (!code) {
+          output.textContent = "Please write some code to compile.";
+          return;
+        }
+
+        output.textContent = "Compiling... Please wait.";
+
+        fetch("https://codequotient.com/api/executeCode", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ code: code, langId: langId }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.error) {
+              output.textContent = "Error: " + data.error;
+              return;
+            }
+            if (data.codeId) {
+              pollResult(data.codeId);
+            } else {
+              output.textContent = "Unexpected response from server.";
+            }
+          })
+          .catch((err) => {
+            output.textContent = "Failed to send request: " + err.message;
+          });
+      });
+
+      function pollResult(codeId) {
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+        }
+        pollingInterval = setInterval(() => {
+          fetch(`https://codequotient.com/api/codeResult/${codeId}`)
+            .then((res) => res.json())
+            .then((result) => {
+              if (result.data && Object.keys(result.data).length === 0) {
+                output.textContent = "Waiting for the output...";
+              } else {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                if (result.data.errors && result.data.errors.trim()) {
+                  output.textContent = "Errors:\n" + result.data.errors;
+                } else {
+                  output.textContent = "Output:\n" + result.data.output;
+                }
+              }
+            })
+            .catch((err) => {
+              clearInterval(pollingInterval);
+              pollingInterval = null;
+              output.textContent = "Error fetching output: " + err.message;
+            });
+        }, 2000);
+      }
+    </script>
+  </body>
+</html>
