@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculate Bill</title>
+  </head>
+  <body>
+    <script>
+      const Items = [
+        {
+          id: "item1",
+          itemName: "Butter Roti",
+          rate: 20,
+          taxes: [
+            {
+              name: "Service Charge",
+              rate: 10,
+              isInPercent: "Y",
+            },
+          ],
+          category: {
+            categoryId: "C2",
+          },
+        },
+        {
+          id: "item2",
+          itemName: "Paneer Butter Masala",
+          rate: 150,
+          taxes: [
+            {
+              name: "GST",
+              rate: 5,
+              isInPercent: "Y",
+            },
+          ],
+          category: {
+            categoryId: "C1",
+          },
+        },
+      ];
+
+      const Categories = [
+        {
+          id: "C1",
+          categoryName: "Platters",
+          superCategory: {
+            superCategoryName: "South Indian",
+            id: "SC1",
+          },
+        },
+        {
+          id: "C2",
+          categoryName: "Breads",
+          superCategory: {
+            superCategoryName: "North Indian",
+            id: "SC2",
+          },
+        },
+      ];
+
+      const bill = {
+        id: "B1",
+        billNumber: 1,
+        opentime: "06 Nov 2020 14:19",
+        customerName: "CodeQuotient",
+        billItems: [
+          {
+            id: "item1",
+            quantity: 4,
+            discount: {
+              rate: 5,
+              isInPercent: "N",
+            },
+          },
+          {
+            id: "item2",
+            quantity: 3,
+            discount: {
+              rate: 10,
+              isInPercent: "Y",
+            },
+          },
+        ],
+      };
+
+      function enrichBillWithItemNames(bill, items) {
+        return {
+          id: bill.id,
+          billNumber: bill.billNumber,
+          opentime: bill.opentime,
+          customerName: bill.customerName,
+          billItems: bill.billItems.map((billItem) => {
+            const itemObj = items.find((it) => it.id === billItem.id);
+            return {
+              id: billItem.id,
+              name: itemObj ? itemObj.itemName : "",
+              quantity: billItem.quantity,
+            };
+          }),
+        };
+      }
+
+      const billWithNames = enrichBillWithItemNames(bill, Items);
+      console.log("TASK 1 RESULT:\n", JSON.stringify(billWithNames, null, 2));
+
+      function getBillWithAmountsAndDetails(bill, items, categories) {
+        let totalAmount = 0;
+
+        const categoryMap = {};
+        categories.forEach((cat) => (categoryMap[cat.id] = cat));
+
+        const itemMap = {};
+        items.forEach((it) => (itemMap[it.id] = it));
+
+        const detailedBillItems = bill.billItems.map((billItem) => {
+          const itemObj = itemMap[billItem.id] || {};
+          const categoryObj =
+            categoryMap[itemObj.category && itemObj.category.categoryId];
+
+          const outputItem = {
+            id: billItem.id,
+            name: itemObj.itemName || "",
+            quantity: billItem.quantity,
+            discount: billItem.discount || null,
+            taxes: Array.isArray(itemObj.taxes) ? itemObj.taxes : [],
+            superCategoryName:
+              categoryObj && categoryObj.superCategory
+                ? categoryObj.superCategory.superCategoryName
+                : "",
+            categoryName: categoryObj ? categoryObj.categoryName : "",
+          };
+
+          let base = billItem.quantity * (itemObj.rate || 0);
+
+          let discountAmount = 0;
+          if (billItem.discount) {
+            if (billItem.discount.isInPercent === "Y") {
+              discountAmount = base * (billItem.discount.rate / 100);
+            } else {
+              discountAmount = billItem.discount.rate;
+            }
+          }
+          let discounted = base - discountAmount;
+
+          let totalTax = 0;
+          if (itemObj.taxes) {
+            itemObj.taxes.forEach((tax) => {
+              if (tax.isInPercent === "Y") {
+                totalTax += discounted * (tax.rate / 100);
+              } else {
+                totalTax += tax.rate;
+              }
+            });
+          }
+
+          outputItem.amount = +(discounted + totalTax).toFixed(2);
+          totalAmount += outputItem.amount;
+
+          return outputItem;
+        });
+
+        return {
+          id: bill.id,
+          billNumber: bill.billNumber,
+          opentime: bill.opentime,
+          customerName: bill.customerName,
+          billItems: detailedBillItems,
+          "Total Amount": +totalAmount.toFixed(2),
+        };
+      }
+
+      const detailedBill = getBillWithAmountsAndDetails(
+        bill,
+        Items,
+        Categories
+      );
+      console.log("\nTASK 2 RESULT:\n", JSON.stringify(detailedBill, null, 2));
+    </script>
+  </body>
+</html>
