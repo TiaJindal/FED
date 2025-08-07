@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GitHub Repo Fetcher</title>
+  <style>
+    .container {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      background: #f9f9f9;
+      text-align: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    input[type="text"] {
+      padding: 12px 15px;
+      width: 75%;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus {
+      border-color: #0366d6;
+      outline: none;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      margin-left: 10px;
+      cursor: pointer;
+      background-color: #0366d6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #024da1;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 25px;
+      text-align: left;
+      max-height: 300px;
+      overflow-y: auto;
+      border-top: 1px solid #ddd;
+    }
+    ul li {
+      padding: 10px 15px;
+      font-size: 15px;
+      cursor: pointer;
+      color: #0366d6;
+      text-decoration: underline;
+      border-bottom: 1px solid #eee;
+      transition: background-color 0.2s;
+    }
+    ul li:hover {
+      background-color: #e6f0ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <form id="githubForm">
+      <input type="text" id="username" placeholder="Github username..." required />
+      <button type="submit">Get Repos</button>
+    </form>
+    <ul id="repoList"></ul>
+  </div>
+
+  <script>
+    document.getElementById('githubForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      if (!username) {
+        alert('Please enter a GitHub username');
+        return;
+      }
+
+      const repoList = document.getElementById('repoList');
+      repoList.innerHTML = 'Loading...';
+
+      fetch('https://api.github.com/users/' + username + '/repos')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('User not found or error fetching repos');
+          }
+          return response.json();
+        })
+        .then(data => {
+          repoList.innerHTML = '';
+          if (data.length === 0) {
+            repoList.innerHTML = '<li>No public repositories found.</li>';
+            return;
+          }
+          data.forEach(repo => {
+            const li = document.createElement('li');
+            li.textContent = repo.name;
+            li.addEventListener('click', () => {
+              window.open(repo.html_url, '_blank');
+            });
+            repoList.appendChild(li);
+          });
+        })
+        .catch(error => {
+          repoList.innerHTML = `<li>Error: ${error.message}</li>`;
+        });
+    });
+  </script>
+</body>
+</html>
