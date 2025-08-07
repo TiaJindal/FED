@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pomodoro Clock with Pause and Ring</title>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    background-color: #222;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #f0f0f0;
+    user-select: none;
+  }
+  .container {
+    width: 500px;
+    height: 460px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    color: #eee;
+  }
+  .upper-part {
+    flex: 3;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 52px;
+    font-weight: 700;
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 3px;
+  }
+  .lower-part {
+    flex: 5;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .time-setting {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+  }
+  .time-setting label {
+    font-weight: 600;
+    user-select: text;
+  }
+  .time-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 22px;
+  }
+  button.control-btn {
+    background-color: rgba(255, 255, 255, 0.25);
+    border: none;
+    border-radius: 6px;
+    width: 34px;
+    height: 34px;
+    color: #eee;
+    font-weight: 700;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    user-select: none;
+  }
+  button.control-btn:disabled {
+    background-color: rgba(200, 200, 200, 0.12);
+    cursor: not-allowed;
+    color: rgba(180, 180, 180, 0.5);
+  }
+  button.control-btn:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+  .time-value {
+    min-width: 34px;
+    text-align: center;
+    font-weight: 700;
+    user-select: text;
+    font-size: 20px;
+    font-family: 'Courier New', Courier, monospace;
+  }
+  .button-group {
+    display: flex;
+    justify-content: space-between;
+    margin-top: auto;
+    gap: 12px;
+  }
+  button#start-btn,
+  button#pause-btn,
+  button#reset-btn {
+    flex: 1;
+    background-color: #3f51b5;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 12px 0;
+    transition: background-color 0.3s;
+    user-select: none;
+  }
+  button#start-btn.running {
+    background-color: #d32f2f;
+  }
+  button#start-btn:hover {
+    background-color: #303f9f;
+  }
+  button#start-btn.running:hover {
+    background-color: #b71c1c;
+  }
+  button#pause-btn {
+    background-color: #ffa726;
+  }
+  button#pause-btn:hover {
+    background-color: #fb8c00;
+  }
+  button#pause-btn:disabled {
+    background-color: rgba(255, 167, 38, 0.5);
+    cursor: not-allowed;
+  }
+  button#reset-btn {
+    background-color: #283593;
+  }
+  button#reset-btn:hover {
+    background-color: #1a237e;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+  <div class="container" role="main" aria-label="Pomodoro Clock">
+    <div class="upper-part" id="timer-display" aria-live="polite" aria-atomic="true">25:00</div>
+    <div class="lower-part">
+      <div class="time-setting">
+        <label for="session-time">Session Time</label>
+        <div class="time-control" role="group" aria-label="Session time controls">
+          <button id="session-decrease" class="control-btn" aria-label="Decrease session time">-</button>
+          <div id="session-time" class="time-value" aria-live="polite">25</div>
+          <button id="session-increase" class="control-btn" aria-label="Increase session time">+</button>
+        </div>
+      </div>
+      <div class="time-setting">
+        <label for="break-time">Break Time</label>
+        <div class="time-control" role="group" aria-label="Break time controls">
+          <button id="break-decrease" class="control-btn" aria-label="Decrease break time">-</button>
+          <div id="break-time" class="time-value" aria-live="polite">5</div>
+          <button id="break-increase" class="control-btn" aria-label="Increase break time">+</button>
+        </div>
+      </div>
+      <div class="button-group">
+        <button id="start-btn" aria-live="polite">Start</button>
+        <button id="pause-btn" disabled aria-live="polite">Pause</button>
+        <button id="reset-btn" disabled aria-live="polite">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const timerDisplay = document.getElementById('timer-display');
+    const sessionTimeEl = document.getElementById('session-time');
+    const breakTimeEl = document.getElementById('break-time');
+    const sessionIncreaseBtn = document.getElementById('session-increase');
+    const sessionDecreaseBtn = document.getElementById('session-decrease');
+    const breakIncreaseBtn = document.getElementById('break-increase');
+    const breakDecreaseBtn = document.getElementById('break-decrease');
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    let sessionTime = 25;
+    let breakTime = 5;
+    let isRunning = false;
+    let isPaused = false;
+    let isSession = true;
+    let timerInterval = null;
+    let timeLeft = sessionTime * 60;
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateDisplay() {
+      timerDisplay.textContent = formatTime(timeLeft);
+    }
+
+    function updateControls() {
+      const disable = isRunning && !isPaused;
+      sessionIncreaseBtn.disabled = disable;
+      sessionDecreaseBtn.disabled = disable;
+      breakIncreaseBtn.disabled = disable;
+      breakDecreaseBtn.disabled = disable;
+
+      startBtn.disabled = isRunning && !isPaused;
+      pauseBtn.disabled = !isRunning;
+
+      resetBtn.disabled = !isRunning && !isPaused;
+
+      if (isRunning && !isPaused) {
+        startBtn.classList.add('running');
+        startBtn.textContent = 'Running...';
+      } else {
+        startBtn.classList.remove('running');
+        startBtn.textContent = 'Start';
+      }
+    }
+
+    function beep() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
+      gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.3);
+    }
+
+    function switchTimer() {
+      beep();
+      isSession = !isSession;
+      timeLeft = isSession ? sessionTime * 60 : breakTime * 60;
+      updateDisplay();
+    }
+
+    function tick() {
+      if (timeLeft <= 0) {
+        switchTimer();
+        return;
+      }
+      timeLeft--;
+      updateDisplay();
+    }
+
+    function startTimer() {
+      if (isRunning && !isPaused) return;
+      if (!isRunning) {
+        isSession = true;
+        timeLeft = sessionTime * 60;
+      }
+      isRunning = true;
+      isPaused = false;
+      updateControls();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function pauseTimer() {
+      if (!isRunning || isPaused) return;
+      isPaused = true;
+      clearInterval(timerInterval);
+      updateControls();
+    }
+
+    function resumeTimer() {
+      if (!isRunning || !isPaused) return;
+      isPaused = false;
+      updateControls();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function resetTimer() {
+      isRunning = false;
+      isPaused = false;
+      clearInterval(timerInterval);
+      timeLeft = sessionTime * 60;
+      updateDisplay();
+      updateControls();
+    }
+
+    // Event listeners for +/-
+    sessionIncreaseBtn.addEventListener('click', () => {
+      sessionTime++;
+      sessionTimeEl.textContent = sessionTime;
+      if (!isRunning) {
+        timeLeft = sessionTime * 60;
+        updateDisplay();
+      }
+    });
+
+    sessionDecreaseBtn.addEventListener('click', () => {
+      if (sessionTime > 0) {
+        sessionTime--;
+        sessionTimeEl.textContent = sessionTime;
+        if (!isRunning) {
+          timeLeft = sessionTime * 60;
+          updateDisplay();
+        }
+      }
+    });
+
+    breakIncreaseBtn.addEventListener('click', () => {
+      breakTime++;
+      breakTimeEl.textContent = breakTime;
+      if (!isRunning && !isPaused && !isSession) {
+        timeLeft = breakTime * 60;
+        updateDisplay();
+      }
+    });
+
+    breakDecreaseBtn.addEventListener('click', () => {
+      if (breakTime > 0) {
+        breakTime--;
+        breakTimeEl.textContent = breakTime;
+        if (!isRunning && !isPaused && !isSession) {
+          timeLeft = breakTime * 60;
+          updateDisplay();
+        }
+      }
+    });
+
+    startBtn.addEventListener('click', () => {
+      if (!isRunning) {
+        startTimer();
+      }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (!isRunning) return;
+      if (!isPaused) {
+        pauseTimer();
+        pauseBtn.textContent = 'Resume';
+      } else {
+        resumeTimer();
+        pauseBtn.textContent = 'Pause';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      resetTimer();
+      pauseBtn.textContent = 'Pause';
+    });
+
+    sessionTimeEl.textContent = sessionTime;
+    breakTimeEl.textContent = breakTime;
+    updateDisplay();
+    updateControls();
+  </script>
+</body>
+</html>
