@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stopwatch</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: black;
+        color: white;
+        font-family: Arial, sans-serif;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .container {
+        text-align: center;
+        padding: 30px;
+        border: 2px solid white;
+        border-radius: 10px;
+        width: 600px;
+      }
+
+      label {
+        display: block;
+        font-size: 48px;
+        letter-spacing: 3px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      button {
+        cursor: pointer;
+        font-size: 18px;
+        padding: 10px 20px;
+        margin: 0 10px;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+        color: white;
+        background-color: #444;
+      }
+
+      button#start.running {
+        background-color: red;
+      }
+
+      button#lap.reset {
+        background-color: #555;
+        color: #ddd;
+      }
+
+      ul#laps {
+        list-style: none;
+        padding-left: 0;
+        margin-top: 20px;
+        max-height: 200px;
+        overflow-y: auto;
+        text-align: left;
+      }
+
+      ul#laps li {
+        border-bottom: 1px solid #555;
+        padding: 5px 0;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <label id="time-label">00:00:00.000</label>
+      <button id="lap">Lap</button>
+      <button id="start">Start</button>
+      <ul id="laps"></ul>
+    </div>
+
+    <script>
+      const timeLabel = document.getElementById("time-label");
+      const startBtn = document.getElementById("start");
+      const lapBtn = document.getElementById("lap");
+      const lapsList = document.getElementById("laps");
+
+      let startTime = null;
+      let elapsedTime = 0;
+      let timerInterval = null;
+
+      function formatTime(timeInMs) {
+        const hours = Math.floor(timeInMs / 3600000);
+        const minutes = Math.floor((timeInMs % 3600000) / 60000);
+        const seconds = Math.floor((timeInMs % 60000) / 1000);
+        const milliseconds = timeInMs % 1000;
+
+        return (
+          String(hours).padStart(2, "0") +
+          ":" +
+          String(minutes).padStart(2, "0") +
+          ":" +
+          String(seconds).padStart(2, "0") +
+          "." +
+          String(milliseconds).padStart(3, "0")
+        );
+      }
+
+      function updateTime() {
+        const now = Date.now();
+        elapsedTime = now - startTime;
+        timeLabel.textContent = formatTime(elapsedTime);
+      }
+
+      function startStopwatch() {
+        startTime = Date.now() - elapsedTime;
+        timerInterval = setInterval(updateTime, 10);
+        startBtn.textContent = "Stop";
+        startBtn.classList.add("running");
+        lapBtn.textContent = "Lap";
+        lapBtn.classList.remove("reset");
+      }
+
+      function stopStopwatch() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        startBtn.textContent = "Start";
+        startBtn.classList.remove("running");
+        lapBtn.textContent = "Reset";
+        lapBtn.classList.add("reset");
+      }
+
+      function resetStopwatch() {
+        elapsedTime = 0;
+        timeLabel.textContent = "00:00:00.000";
+        lapsList.innerHTML = "";
+        lapBtn.textContent = "Lap";
+        lapBtn.classList.remove("reset");
+      }
+
+      function recordLap() {
+        if (!timerInterval) return;
+
+        const lapTime = formatTime(elapsedTime);
+        const li = document.createElement("li");
+        li.textContent = lapTime;
+        lapsList.insertBefore(li, lapsList.firstChild);
+      }
+
+      startBtn.addEventListener("click", () => {
+        if (timerInterval) {
+          stopStopwatch();
+        } else {
+          startStopwatch();
+        }
+      });
+
+      lapBtn.addEventListener("click", () => {
+        if (timerInterval) {
+          recordLap();
+        } else {
+          resetStopwatch();
+        }
+      });
+    </script>
+  </body>
+</html>
